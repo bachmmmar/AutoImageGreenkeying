@@ -7,7 +7,7 @@ class BorderResult:
         self._height = height
 
     def get_size(self):
-        return self._width, self._height
+        return (self._width, self._height)
 
     def get_x_range(self):
         x1 = self._left
