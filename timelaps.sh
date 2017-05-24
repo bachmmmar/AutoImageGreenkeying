@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SOURCEDIR=python/out/images
+SOURCEDIR=python/out
 
 mkdir -p small
 
