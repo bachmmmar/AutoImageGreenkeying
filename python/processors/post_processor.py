@@ -52,7 +52,8 @@ class PostProcessor:
 
         _, ycom = result.center_of_mass
         (bg_width, bg_height)=self._bg_size
-        fg_height, fg_width = img_scaled.shape[:2]
+        fg_height, _ = img_scaled.shape[:2]
+        fg_width = int(self._img_size[0]*self._target_rescaleing)
         y=int(bg_height/2-(ycom*self._target_rescaleing))
         yh=min(bg_height, y+fg_height)
         width = min(bg_width, fg_width)
