@@ -22,7 +22,8 @@ def is_valid_file(file, text):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Replaces the green background for a series of images with a background image in two steps')
+        description='Replaces the green background for a series of images with a background image in two steps', \
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('-t', '--task', choices=['both', 'pre', 'post'], required=True, default='both', \
                         help='select whether preprocessing or postprocessing will be done')
@@ -33,7 +34,7 @@ def main():
 
     parser_pre = parser.add_argument_group('PreProcessing', 'Options which only affects preprocessing.')
     parser_pre.add_argument('-f', '--filter', default='zoom14.jpg', \
-                            help='file endings matching the filter value will be processed (e.g. zoom14.jpg)')
+                            help='file endings matching the filter value will be processed')
     parser_pre.add_argument('--tmpdir', default='/tmp/greenkey_bg', \
                             help='location of the preprocessing output. This might be usefull for separate postprocessing')
 
@@ -42,12 +43,14 @@ def main():
                              help='directory where output images are placed')
     parser_post.add_argument('-b', '--bgimg', default='test_images/background.jpg', \
                              help='image used as background')
+    parser_post.add_argument('-m', '--usemin', default=False, action='store_true', help='uses the minimum width of all object as target')
 
     args = parser.parse_args()
 
     is_valid_directory(args.sourcedir, 'sourcedir does not exist!')
     is_valid_directory(args.tmpdir, 'tmpdir does not exist!', create=True)
     is_valid_file(args.bgimg, 'background image does not exist!')
+
 
     if args.task in ['pre', 'both']:
         print('Start preprocessing...')
@@ -73,7 +76,7 @@ def main():
         result.load(args.datafile)
 
         # initialize and calculate destination size
-        post = PostProcessor(result, args.bgimg)
+        post = PostProcessor(result, args.bgimg, args.usemin)
 
         is_valid_directory(args.outdir, 'outdir does not exist!', create=True)
 
