@@ -62,7 +62,11 @@ def main():
                 p = PreProcessor(result, args.sourcedir, args.tmpdir)
                 p.process_file(in_file)
 
+        # print and safe results
         result.print()
+        head, tail = os.path.split(args.datafile)
+        if not os.path.exists(head):
+            args.datafile = args.tmpdir + "/" + tail
         result.save(args.datafile)
         print('preprocessing done')
         args.sourcedir = args.tmpdir
