@@ -15,6 +15,8 @@ class PreProcessor:
         self._output_dir = output_dir
         self._in_file = ''
         self._in_filepath = ''
+        self._face_cascade = cv.CascadeClassifier('cascade_clasifier/haarcascade_frontalface_default.xml')
+        self._eye_cascade = cv.CascadeClassifier('cascade_clasifier/haarcascade_eye.xml')
 
     class DebugImage:
         def __init__(self, name, image):
@@ -110,7 +112,46 @@ class PreProcessor:
 
         #return the croped image
         x1, x2, y1, y2 = res.border.get_ranges()
-        return img_RGBA[y1:y2, x1:x2]
+        croped_img = img_RGBA[y1:y2, x1:x2]
+
+        res.face = self.face_recognition(croped_img)
+
+        self._result.add_result(res)
+
+        return croped_img
+
+    def face_recognition(self, img_colr):
+        min_face_size=(300,300)
+        max_face_size=(1000,1000)
+        min_eye_size = (100, 100)
+        max_eye_size = (190, 190)
+        img_col = cv.transpose(img_colr)
+        img_col = cv.flip(img_col, 1)
+        gray = cv.cvtColor(img_col, cv.COLOR_BGR2GRAY)
+        faces = self._face_cascade.detectMultiScale(gray, 1.05, 4, minSize=min_face_size, maxSize=max_face_size)
+
+        face = FaceResult()
+
+        for (x, y, w, h) in faces:
+            cv.rectangle(img_col, (x, y), (x + w, y + h), (255, 0, 0), 2)
+            roi_gray = gray[y:y + h, x:x + w]
+            roi_color = img_col[y:y + h, x:x + w]
+            eyes = self._eye_cascade.detectMultiScale(roi_gray, 1.1, 4, minSize=min_eye_size, maxSize=max_eye_size)
+            if len(eyes) == 2:
+                print('found {0} face(s) with two eyes'.format(len(faces)))
+                (elx, ely, elw, elh) = eyes[0]
+                (erx, ery, erw, erh) = eyes[1]
+                face = FaceResult( (int(x+w/2), int(y+h/2)), \
+                                   (int(elx+elw/2), int(ely+elh/2)), \
+                                   (int(erx+erw/2), int(ery+erh/2)))
+
+            print('Face at {0}x{1} with {2}x{3}'.format(y, x, h, w))
+            for (ex, ey, ew, eh) in eyes:
+                cv.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
+                print('eye at {0}x{1} with {2}x{3}'.format(y+ey,x+ex,eh, ew))
+
+        self.add_debug_image('face.jpg', img_col)
+        return face
 
     def get_child_orientation(self, image):
         CHILD_CENTER = (1232, 2259)
@@ -141,6 +182,5 @@ class PreProcessor:
         y = (y - cc[cv.CC_STAT_TOP])
 
         res = PreProcessingResult(self._in_file, self._out_filepath, (int(x),int(y)), border, 0)
-        self._result.add_result(res)
 
         return res
