@@ -175,12 +175,21 @@ class PreProcessor:
 
         border = BorderResult(cc[cv.CC_STAT_LEFT], cc[cv.CC_STAT_TOP], cc[cv.CC_STAT_WIDTH], cc[cv.CC_STAT_HEIGHT])
 
+        # get all points from specified label and fit them
+        k = np.transpose(np.where(np.equal(labels, label)))
+        re = cv.fitLine(k, cv.DIST_L12, 0, 0.1, 0.1)
+        ang = np.arctan((re[1])/(re[0]))*180/np.pi
+        if ang < 0:
+            ang += 90
+        else:
+            ang -= 90
+
         #calculate centroids refering to border
         x = centroids[label,0]
         y = centroids[label,1]
         x = (x - cc[cv.CC_STAT_LEFT])
         y = (y - cc[cv.CC_STAT_TOP])
 
-        res = PreProcessingResult(self._in_file, self._out_filepath, (int(x),int(y)), border, 0)
+        res = PreProcessingResult(self._in_file, self._out_filepath, (int(x),int(y)), border, ang)
 
         return res

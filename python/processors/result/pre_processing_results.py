@@ -18,7 +18,7 @@ class PreProcessingResults:
     def print(self):
         print('{} Results found!'.format(len(self._result)))
         for r in self._result:
-            print('{}: center-y {}, size {}'.format(r.filename_in, r.center_of_mass, r.border.get_size()))
+            print('{}: center-y {}, size {}, rotation {}'.format(r.filename_in, r.center_of_mass, r.border.get_size(), r.rotation))
 
     def save(self, filepath):
         file = open(filepath, 'w')
