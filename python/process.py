@@ -35,6 +35,8 @@ def main():
     parser_pre = parser.add_argument_group('PreProcessing', 'Options which only affects preprocessing.')
     parser_pre.add_argument('-f', '--filter', default='zoom14.jpg', \
                             help='file endings matching the filter value will be processed')
+    parser_pre.add_argument('--rotcw', default=False, action='store_true',
+                             help='rotate images by 90deg counter clock wise')
     parser_pre.add_argument('--tmpdir', default='/tmp/greenkey_bg', \
                             help='location of the preprocessing output. This might be usefull for separate postprocessing')
 
@@ -60,7 +62,7 @@ def main():
         for in_file in os.listdir(args.sourcedir):
             if in_file.endswith(args.filter):
                 p = PreProcessor(result, args.sourcedir, args.tmpdir)
-                p.process_file(in_file)
+                p.process_file(in_file, args.rotcw)
 
         # print and safe results
         result.print()

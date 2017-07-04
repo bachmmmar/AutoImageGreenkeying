@@ -14,7 +14,7 @@ class PreProcessingResult:
     @classmethod
     def fromstr(cls, text:str):
         values = text.split(",")
-        if len(values) != 9:
+        if len(values) != 15:
             raise Exception("Couldn't initialize PreProcessingResult from string ({})".format(text))
         filename_in = values[0]
         filename_out = values[1]

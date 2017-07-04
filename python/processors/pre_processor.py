@@ -15,6 +15,7 @@ class PreProcessor:
         self._output_dir = output_dir
         self._in_file = ''
         self._in_filepath = ''
+        self._rotcw = False
         self._face_cascade = cv.CascadeClassifier('cascade_clasifier/haarcascade_frontalface_default.xml')
         self._eye_cascade = cv.CascadeClassifier('cascade_clasifier/haarcascade_eye.xml')
 
@@ -27,13 +28,19 @@ class PreProcessor:
         def __init__(self, arg):
             self.args = arg
 
-    def process_file(self, in_file):
+    def process_file(self, in_file, rotcw = False):
         self._in_file = in_file
         self._in_filepath = os.path.join(self._source_dir, in_file)
         self._out_filepath = os.path.join(self._output_dir, "{}.tiff".format(in_file))
+        self._rotcw = rotcw
 
         print(self._in_filepath)
         img_in = cv.imread(self._in_filepath)
+
+        if rotcw:
+            img_in = cv.transpose(img_in)
+            img_in = cv.flip(img_in, 1)
+
         try:
             out = self.process_image(img_in)
             cv.imwrite(self._out_filepath, out)
@@ -125,17 +132,18 @@ class PreProcessor:
         max_face_size=(1000,1000)
         min_eye_size = (100, 100)
         max_eye_size = (190, 190)
-        img_col = cv.transpose(img_colr)
-        img_col = cv.flip(img_col, 1)
-        gray = cv.cvtColor(img_col, cv.COLOR_BGR2GRAY)
+
+        gray = cv.cvtColor(img_colr, cv.COLOR_BGR2GRAY)
         faces = self._face_cascade.detectMultiScale(gray, 1.05, 4, minSize=min_face_size, maxSize=max_face_size)
+
+        img_dbg = img_colr.copy()
 
         face = FaceResult()
 
         for (x, y, w, h) in faces:
-            cv.rectangle(img_col, (x, y), (x + w, y + h), (255, 0, 0), 2)
+            cv.rectangle(img_dbg, (x, y), (x + w, y + h), (255, 0, 0), 2)
             roi_gray = gray[y:y + h, x:x + w]
-            roi_color = img_col[y:y + h, x:x + w]
+            roi_color = img_dbg[y:y + h, x:x + w]
             eyes = self._eye_cascade.detectMultiScale(roi_gray, 1.1, 4, minSize=min_eye_size, maxSize=max_eye_size)
             if len(eyes) == 2:
                 print('found {0} face(s) with two eyes'.format(len(faces)))
@@ -150,11 +158,11 @@ class PreProcessor:
                 cv.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
                 print('eye at {0}x{1} with {2}x{3}'.format(y+ey,x+ex,eh, ew))
 
-        self.add_debug_image('face.jpg', img_col)
+        self.add_debug_image('face.jpg', img_dbg)
         return face
 
     def get_child_orientation(self, image):
-        CHILD_CENTER = (1232, 2259)
+        CHILD_CENTER = (2259, 1232)
 
         # segment image into components
         img_inv = cv.bitwise_not(image)
@@ -179,10 +187,12 @@ class PreProcessor:
         k = np.transpose(np.where(np.equal(labels, label)))
         re = cv.fitLine(k, cv.DIST_L12, 0, 0.1, 0.1)
         ang = np.arctan((re[1])/(re[0]))*180/np.pi
-        if ang < 0:
-            ang += 90
-        else:
-            ang -= 90
+
+        if not self._rotcw:
+            if ang < 0:
+                ang += 90
+            else:
+                ang -= 90
 
         #calculate centroids refering to border
         x = centroids[label,0]
