@@ -28,11 +28,12 @@ class PreProcessor:
         def __init__(self, arg):
             self.args = arg
 
-    def process_file(self, in_file, rotcw = False):
+    def process_file(self, in_file, rotcw = False, main_object_loc = (2259, 1232)):
         self._in_file = in_file
         self._in_filepath = os.path.join(self._source_dir, in_file)
         self._out_filepath = os.path.join(self._output_dir, "{}.tiff".format(in_file))
         self._rotcw = rotcw
+        self._main_object_loc = main_object_loc
 
         print(self._in_filepath)
         img_in = cv.imread(self._in_filepath)
@@ -162,14 +163,13 @@ class PreProcessor:
         return face
 
     def get_child_orientation(self, image):
-        CHILD_CENTER = (2259, 1232)
 
         # segment image into components
         img_inv = cv.bitwise_not(image)
         num_labels, labels, stats , centroids = cv.connectedComponentsWithStats(img_inv, 4, cv.CV_32S)
 
         # get the label of the expected position
-        label = labels[CHILD_CENTER]
+        label = labels[self._main_object_loc]
 
         if num_labels > 10:
             raise self.NoChildFound('Too many labels detected ({})'.format(num_labels))

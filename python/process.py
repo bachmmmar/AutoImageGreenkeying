@@ -19,6 +19,13 @@ def is_valid_file(file, text):
         print('Error: {} ({})'.format(text, file))
         sys.exit(1)
 
+def getMainOjectLocation(pos_string:str):
+    str_nr = pos_string.split(',')
+    if len(str_nr) == 2:
+        if str_nr[0].isdigit() and str_nr[1].isdigit():
+            return (int(str_nr[0]), int(str_nr[1]))
+    print('Error: Could not read Main Object Location {} (expected format 12,430)'.format(pos_string))
+    sys.exit(1)
 
 def main():
     parser = argparse.ArgumentParser(
@@ -39,6 +46,8 @@ def main():
                              help='rotate images by 90deg counter clock wise')
     parser_pre.add_argument('--tmpdir', default='/tmp/greenkey_bg', \
                             help='location of the preprocessing output. This might be usefull for separate postprocessing')
+    parser_pre.add_argument('--mainobjectloc', default='2259,1232', \
+                            help='position of the main object in the images. The object at this location will be used!')
 
     parser_post = parser.add_argument_group('PostProcessing', 'Options which only affects postprocessing.')
     parser_post.add_argument('-o', '--outdir', default='out', \
@@ -53,16 +62,16 @@ def main():
     is_valid_directory(args.tmpdir, 'tmpdir does not exist!', create=True)
     is_valid_file(args.bgimg, 'background image does not exist!')
 
-
     if args.task in ['pre', 'both']:
         print('Start preprocessing...')
 
+        main_object_loc = getMainOjectLocation(args.mainobjectloc)
         result = PreProcessingResults()
 
         for in_file in os.listdir(args.sourcedir):
             if in_file.endswith(args.filter):
                 p = PreProcessor(result, args.sourcedir, args.tmpdir)
-                p.process_file(in_file, args.rotcw)
+                p.process_file(in_file, args.rotcw, main_object_loc)
 
         # print and safe results
         result.print()
