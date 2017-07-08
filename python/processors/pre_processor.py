@@ -65,7 +65,7 @@ class PreProcessor:
 
     def process_image(self, img_in):
 
-        GREEN_RANGE=13
+        GREEN_RANGE=14
         NO_SAT = 40
 
         img_hsv = cv.cvtColor(img_in, cv.COLOR_BGR2HSV)
