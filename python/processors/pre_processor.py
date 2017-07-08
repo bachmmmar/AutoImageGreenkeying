@@ -45,6 +45,7 @@ class PreProcessor:
         try:
             out = self.process_image(img_in)
             cv.imwrite(self._out_filepath, out)
+            #self.write_debug_images(self._out_filepath)
         except self.NoChildFound as e:
             print(e)
             self.write_debug_images(self._out_filepath)
@@ -103,19 +104,28 @@ class PreProcessor:
         self.add_debug_image('mask_comb.jpg', img_mask_comb)
 
         # remove noise from mask
-        img_mask = cv.erode(img_mask_comb,(10,10))
-        self.add_debug_image('mask.jpg', img_mask)
+        #img_mask_noise = cv.dilate(img_mask_comb,np.ones((2,2),np.uint8))
+        #self.add_debug_image('mask_noise.jpg', img_mask_noise)
 
 
         # crete mask for orientation determination
-        low_freq_mask = cv.medianBlur(img_mask,21)
+        low_freq_mask = cv.medianBlur(img_mask_comb,21)
         self.add_debug_image('mask_lf.jpg', low_freq_mask)
 
-        res = self.get_child_orientation(low_freq_mask)
+        res, selected_comp = self.get_child_orientation(low_freq_mask)
+
+        # invert component and make it smaller
+        img_comp = cv.bitwise_not(selected_comp)
+        img_comp_small = cv.dilate(img_comp, np.ones((10,10),np.uint8))
+        self.add_debug_image('mask_selobj.jpg', img_comp_small)
+
+        # combine mask to ensure no holes in object (details at border will be kept by other masks)
+        img_mask_final = cv.bitwise_and(img_comp_small, img_mask_comb)
+        self.add_debug_image('mask.jpg', img_mask_final)
 
         # create alpha channel image
         b_channel, g_channel, r_channel = cv.split(img_in)
-        img_mask_not = cv.bitwise_not(img_mask)
+        img_mask_not = cv.bitwise_not(img_mask_final)
         img_RGBA = cv.merge((b_channel, g_channel, r_channel, img_mask_not))
 
         #return the croped image
@@ -162,6 +172,19 @@ class PreProcessor:
         self.add_debug_image('face.jpg', img_dbg)
         return face
 
+    def determine_rotation(self, selected_comp):
+        # get all points from specified label and fit them
+        k = np.transpose(np.where(np.equal(selected_comp, 255)))
+        re = cv.fitLine(k, cv.DIST_L12, 0, 0.1, 0.1)
+        ang = np.arctan((re[1]) / (re[0])) * 180 / np.pi
+
+        if not self._rotcw:
+            if ang < 0:
+                ang += 90
+            else:
+                ang -= 90
+        return ang
+
     def get_child_orientation(self, image):
 
         # segment image into components
@@ -178,28 +201,22 @@ class PreProcessor:
             print(stats)
             print(centroids)
 
-        print('Child label: {}'.format(label))
+        sizeh, sizew = labels.shape[:2]
+        selected_comp = np.zeros((sizeh, sizew, 1), np.uint8)
+        selected_comp[label==labels] = 255
+
         cc = stats[label]
 
         border = BorderResult(cc[cv.CC_STAT_LEFT], cc[cv.CC_STAT_TOP], cc[cv.CC_STAT_WIDTH], cc[cv.CC_STAT_HEIGHT])
 
-        # get all points from specified label and fit them
-        k = np.transpose(np.where(np.equal(labels, label)))
-        re = cv.fitLine(k, cv.DIST_L12, 0, 0.1, 0.1)
-        ang = np.arctan((re[1])/(re[0]))*180/np.pi
-
-        if not self._rotcw:
-            if ang < 0:
-                ang += 90
-            else:
-                ang -= 90
+        ang = self.determine_rotation(selected_comp)
 
         #calculate centroids refering to border
         x = centroids[label,0]
         y = centroids[label,1]
-        x = (x - cc[cv.CC_STAT_LEFT])
-        y = (y - cc[cv.CC_STAT_TOP])
+        x = (x - border._left)
+        y = (y - border._top)
 
         res = PreProcessingResult(self._in_file, self._out_filepath, (int(x),int(y)), border, ang)
 
-        return res
+        return res, selected_comp
