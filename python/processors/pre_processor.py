@@ -183,7 +183,7 @@ class PreProcessor:
                 ang += 90
             else:
                 ang -= 90
-        return ang
+        return ang[0]
 
     def get_child_orientation(self, image):
 
@@ -194,7 +194,7 @@ class PreProcessor:
         # get the label of the expected position
         label = labels[self._main_object_loc]
 
-        if num_labels > 10:
+        if num_labels > 20:
             raise self.NoChildFound('Too many labels detected ({})'.format(num_labels))
             print(num_labels)
             print(labels)
