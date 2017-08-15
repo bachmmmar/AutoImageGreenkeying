@@ -17,6 +17,13 @@ class PostProcessor:
 
         self._target_rescaleing = self.getTargetRescaling()
 
+    def __init__(self):
+        self._result = None
+        self._use_min_not_max = False
+        self._img_size = (12,24)
+        self._bg_img = None
+        self._target_rescaleing = 1
+
     def getTargetImageSize(self):
         height = []
         width = []
